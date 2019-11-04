@@ -1,6 +1,6 @@
 function GithubClient(token) {
     const TOKEN_SERVER = 'http://localhost:3000/token'
-    return { get }
+    return { get, post }
 
     async function get(param, data) {
         let { url, options } = endpoints(param, data)
@@ -10,18 +10,48 @@ function GithubClient(token) {
         let json = await response.json()
 
         if (response.status !== 200) {
-            let statusCode = response.status
             let { message } = response
             let er = Error(message)
-            er.code = statusCode
+            er.code = response.status
             throw er
         }
         
         return json
     }
 
+    async function post(param, data) {
+        let { url, options } = endpoints(param, data)
+
+        let response = await fetch(url, options)
+        let json = await response.json()
+
+        // bad http response handler here
+
+        return json
+    }
+
     function endpoints(endpoint, params) {
+        const GH_API_BASE = 'https://api.github.com/'
         switch (endpoint) {
+            case 'branch':
+                /**
+                 * `params` argument must include:
+                 *   SHA-1 of master branch
+                 *   user name
+                 *   repo name
+                 */
+                return {
+                    url: `${GH_API_BASE}repos/${params.user}/${params.repo}/refs`,
+                    mode: 'no-cors',
+                    method: 'POST',
+                    options: {
+                        headers: { authorization: `token ${token}` }
+                    },
+                    body: {
+                        ref: 'refs/heads/SchemaPusher/publiccode-yml',
+                        sha: params.sha
+                    }
+                }
             case 'token':
                 return {
                     url: TOKEN_SERVER,
@@ -36,20 +66,16 @@ function GithubClient(token) {
                 }
             case 'user':
                 return {
-                    url: 'https://api.github.com/user',
+                    url: '${GH_API_BASE}user',
                     options: {
-                        headers: {
-                            Authorization: `token ${token}`
-                        }
+                        headers: { Authorization: `token ${token}` }
                     }
                 }
             case 'repos':
                 return {
-                    url: `https://api.github.com/users/${params.login}/repos`,
+                    url: `${GH_API_BASE}users/${params.login}/repos`,
                     options: {
-                        headers: {
-                            Authorization: `token ${token}`
-                        }
+                        headers: { Authorization: `token ${token}` }
                     }
                 }
             default:
