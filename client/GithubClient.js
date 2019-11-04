@@ -4,7 +4,7 @@ function GithubClient(token) {
 
     async function get(param, data) {
         let { url, options } = endpoints(param, data)
-        // const TOKEN = localStorage.getItem('ghToken')
+        options.method = 'GET'
         
         let response = await fetch(url, options)
         let json = await response.json()
@@ -21,6 +21,7 @@ function GithubClient(token) {
 
     async function post(param, data) {
         let { url, options } = endpoints(param, data)
+        options.method = 'POST'
 
         let response = await fetch(url, options)
         let json = await response.json()
@@ -33,6 +34,22 @@ function GithubClient(token) {
     function endpoints(endpoint, params) {
         const GH_API_BASE = 'https://api.github.com/'
         switch (endpoint) {
+            case 'publiccode':
+                return {
+                    /**
+                     * `params` argument must include:
+                     *   user
+                     *   repo
+                     */
+                    url: `${GH_API_BASE}repos/${params.user}/${params.repo}/publiccode.yml`,
+                    mode: 'cors',
+                    options: { headers: { authorization: `token ${token}` }},
+                    body: JSON.stringify({
+                        message: 'add publiccode.yml file',
+                        content: btoa(params.content), // QUESTION: how am I going to encode form data as yml?
+                        branch: 'SchemaPusher/publiccode-yml'
+                    })
+                }
             case 'branch':
                 /**
                  * `params` argument must include:
@@ -42,15 +59,15 @@ function GithubClient(token) {
                  */
                 return {
                     url: `${GH_API_BASE}repos/${params.user}/${params.repo}/refs`,
-                    mode: 'no-cors',
+                    mode: 'cors',
                     method: 'POST',
                     options: {
                         headers: { authorization: `token ${token}` }
                     },
-                    body: {
+                    body: JSON.stringify({
                         ref: 'refs/heads/SchemaPusher/publiccode-yml',
                         sha: params.sha
-                    }
+                    })
                 }
             case 'token':
                 return {
